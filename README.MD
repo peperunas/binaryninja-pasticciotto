@@ -1,4 +1,5 @@
 # Pasticciotto Architecture Plugin
+![Screen]
 ## Description
 
 This plugin disassembles **[Pasticciotto](https://github.com/peperunas/pasticciotto)** assembly code.
@@ -28,3 +29,5 @@ His **[MSP430](https://github.com/joshwatson/binaryninja-msp430)** repo was the 
 # Disclaimer
 
 This plugin is still a WIP!
+
+[Screen]:./screen.png
