@@ -124,8 +124,7 @@ class Pasticciotto(Architecture):
                 data_op = x
                 break
         if not data_op:
-            log_error("Unknown opcode: {}".format(unpack("B", data[0])[0]))
-            return None
+            raise Exception("Invalid opcode. Wrong key maybe?")
 
         instr = data_op[0]
         tokens = [InstructionTextToken(
