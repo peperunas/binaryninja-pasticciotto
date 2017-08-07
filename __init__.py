@@ -112,10 +112,25 @@ class Pasticciotto(Architecture):
     link_reg = 'rp'
     ops_encrypted = False
 
+    def get_opcode_key(self):
+        op_key = None
+        choice = get_choice_input(
+            "Opcodes key format:", "", ["String", "File"])
+        if choice == 0:  # string
+            op_key = get_text_line_input("Opcodes key:", "")
+        elif choice == 1:  # file
+            filename = get_open_filename_input("Opcodes key file")
+            with open(filename, "rb") as f:
+                op_key = f.read()
+        if not op_key:
+            raise Exception("Opcodes key not defined!")
+
+        return op_key
+
     def parse(self, data):
         data_op = None
         if not self.ops_encrypted:
-            op_key = get_text_line_input("Opcodes key:", "")
+            op_key = self.get_opcode_key()
             encrypt_ops(op_key)
             self.ops_encrypted = True
 
