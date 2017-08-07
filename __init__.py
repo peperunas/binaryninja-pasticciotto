@@ -110,10 +110,15 @@ class Pasticciotto(Architecture):
                  "S1", "S2", "S3", "IP", "RP", "SP"]
     stack_pointer = 'sp'
     link_reg = 'rp'
-
-    encrypt_ops("test")
+    ops_encrypted = False
 
     def parse(self, data):
+        data_op = None
+        if not self.ops_encrypted:
+            op_key = get_text_line_input("Opcodes key:", "")
+            encrypt_ops(op_key)
+            self.ops_encrypted = True
+
         for x in ops:
             if x[2] == unpack("B", data[0])[0]:
                 data_op = x
