@@ -67,9 +67,13 @@ op_tokens = {"reg":
                  InstructionTextToken(
                      InstructionTextTokenType.RegisterToken, reg)
              ],
-             "imm": lambda reg, value: [
+             "addr": lambda reg, value: [
                  InstructionTextToken(
                      InstructionTextTokenType.PossibleAddressToken, hex(value), value)
+             ],
+             "imm": lambda reg, value: [
+                 InstructionTextToken(
+                     InstructionTextTokenType.IntegerToken, hex(value))
              ]
              }
 
@@ -194,7 +198,7 @@ class Pasticciotto(Architecture):
             dst_val = unpack("<H", data[1:3])[0]
             src = src_val = src_tk = None
             dst = dst_val
-            dst_tk = op_tokens["imm"](dst, dst_val)
+            dst_tk = op_tokens["addr"](dst, dst_val)
         elif data_op[1] == "single":
             length = op_sizes["single"]
             src = src_val = src_tk = None
