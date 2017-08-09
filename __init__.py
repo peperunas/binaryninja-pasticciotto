@@ -1,6 +1,13 @@
 from binaryninja import *
-from struct import unpack
+from struct import pack, unpack
+import re
 
+
+re_width_8 = ".*[bB]$"
+reg_names = ["r0", "r1", "r2", "r3", "s0",
+             "s1", "s2", "s3", "ip", "rp", "sp"]
+data_va = 0x10000000
+stack_va = 0x20000000
 # name, size, value
 ops = [
     ["movi", "imm2reg", 0],
@@ -74,7 +81,7 @@ op_tokens = {
     ],
     "addr": lambda reg, value: [
         InstructionTextToken(
-            InstructionTextTokenType.PossibleAddressToken, hex(value), value)
+            InstructionTextTokenType.PossibleAddressToken, hex(value), data_va + value)
     ],
     "imm": lambda reg, value: [
         InstructionTextToken(
@@ -83,71 +90,97 @@ op_tokens = {
 }
 
 il_dst = {
-    "reg": lambda il, width, reg, value, src: il.set_reg(
-        2, reg, src),
-    "imm": lambda il, width, reg, value, src: il.store(width, il.const_pointer(2, value), src)
+    "reg": lambda il, width, dst, value: il.set_reg(
+        2, dst, value),
+    "addr": lambda il, width, dst, value: il.store(width, il.const_pointer(2, data_va + value), value),
+    "imm": lambda il, width, src, value: il.const(width, value)
 }
 il_src = {
-    "reg": lambda il, width, reg, value, src: il.reg(2, reg),
-    "imm": lambda il, width, reg, value, src: il.load(width, il.const_pointer(2, value))
+    "reg": lambda il, width, src, value: il.reg(2, src),
+    "addr": lambda il, width, src, value: il.load(width, il.const_pointer(2, data_va + value)),
+    "imm": lambda il, width, src, value: il.const(width, value)
 }
 
 il_ops = {
-    "movi": 0,
-    "movr": 0,
-    "lodi": 0,
-    "lodr": 0,
+    "movi": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il_src["imm"](il, width, src, src_value)),
+    "movr": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il_src["reg"](il, width, src, src_value)),
+    "lodi": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il_src["addr"](il, width, src, src_value)),
+    "lodr": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il_src["addr"](
+        il, width, il_src["reg"](il, width, src, src_value), src_value)),
     "stri": 0,
     "strr": 0,
-    "addi": lambda il, src_op, dst_op, src, dst, width, src_value, dst_value: [
-        DestOperandsIL[dst_op](
-            il, width, dst, dst_value,
-            il.add(
-                width,
-                SourceOperandsIL[dst_op](
-                    il, width, dst, dst_value
-                ),
-                SourceOperandsIL[src_op](
-                    il, width, src, src_value
-                ),
-                flags='*'
-            )
-        ),
-        (
-            il.set_reg(
-                2, src,
-                il.add(
-                    width,
-                    il.reg(2, src),
-                    il.const(2, width)
-                )
-            ) if src_op == INDIRECT_AUTOINCREMENT_MODE
-            else None
-        )
-    ],
-    "addr": 0,
-    "subi": 0,
-    "subr": 0,
-    "andi": 0,
-    "andw": 0,
-    "andr": 0,
-    "yorb": 0,
-    "yorw": 0,
-    "yorr": 0,
-    "xorb": 0,
-    "xorw": 0,
-    "xorr": 0,
-    "notr": 0,
-    "muli": 0,
-    "mulr": 0,
-    "divi": 0,
-    "divr": 0,
-    "shli": 0,
-    "shlr": 0,
-    "shri": 0,
-    "shrr": 0,
-    "push": 0,
-    "poop": 0,
+    "addi": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.add(width, il_src["reg"](il, width, dst, dst_value), il_src["imm"](
+        il, width, src, src_value))),
+    "addr": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.add(width, il_src["reg"](il, width, dst, dst_value), il_src["reg"](
+        il, width, src, src_value))),
+    "subi": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.sub(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
+    "subr": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.sub(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["reg"](il, width, src, src_value))),
+    "andi": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.and_expr(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
+    "andw": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.and_expr(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
+    "andr": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.and_expr(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["reg"](il, width, src, src_value))),
+    "yorb": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.or_expr(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
+    "yorw": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.or_expr(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
+    "yorr": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.or_expr(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["reg"](il, width, src, src_value))),
+    "xorb": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.xor_expr(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
+    "xorw": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.xor_expr(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
+    "xorr": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.xor_expr(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["reg"](il, width, src, src_value))),
+    "notr": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.neg_expr(
+        il_src["reg"](il, width, dst, dst_value))),
+    "muli": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.mult(width, il_src["reg"](il, width, dst, dst_value), il_src["imm"](
+        il, width, src, src_value))),
+    "mulr": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.mult(width, il_src["reg"](il, width, dst, dst_value), il_src["reg"](
+        il, width, src, src_value))),
+    "divi": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.div_unsigned(width, il_src["reg"](il, width, dst, dst_value), il_src["imm"](
+        il, width, src, src_value))),
+    "divr": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.div_unsigned(width, il_src["reg"](il, width, dst, dst_value), il_src["reg"](
+        il, width, src, src_value))),
+    "shli": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.shift_left(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
+    "shlr": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.shift_left(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["reg"](il, width, src, src_value))),
+    "shri": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.logical_shift_right(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
+    "shrr": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il.logical_shift_right(width, il_src["reg"](
+        il, width, dst, dst_value), il_src["reg"](il, width, src, src_value))),
+    "push": lambda il, width, src, src_value, dst, dst_value: il.push(2, il_src["imm"](il, width, dst, dst_value)),
+    "poop": lambda il, width, src, src_value, dst, dst_value: il_dst["reg"](il, width, dst, il.pop(2)),
     "cmpb": 0,
     "cmpw": 0,
     "cmpr": 0,
@@ -162,10 +195,10 @@ il_ops = {
     "jpni": 0,
     "jpnr": 0,
     "call": 0,
-    "retn": [il.ret(il.pop(2))],
-    "shit": 0,
-    "nope": 0,
-    "grmn": 0
+    "retn": lambda il, width, src, src_value, dst, dst_value: il.ret(il.pop(2)),
+    "shit": lambda il, width, src, src_value, dst, dst_value: il.ret(il.pop(2)),
+    "nope": lambda il, width, src, src_value, dst, dst_value: il.nop(),
+    "grmn": lambda il, width, src, src_value, dst, dst_value: [il_dst["reg"](il, width, x, il.const(2, 0x42)) for x in reg_names if x not in ["sp", "rp", "ip"]]
 }
 
 
@@ -201,8 +234,6 @@ class Pasticciotto(Architecture):
         'sp': RegisterInfo('sp', 2),
     }
 
-    reg_names = ["R0", "R1", "R2", "R3", "R0",
-                 "S1", "S2", "S3", "IP", "RP", "SP"]
     stack_pointer = 'sp'
     link_reg = 'rp'
     flags = ['c', 'z']
@@ -234,7 +265,9 @@ class Pasticciotto(Architecture):
         return op_key
 
     def parse(self, data):
+        cre_width_8 = re.compile(re_width_8)
         data_op = None
+
         if not self.ops_encrypted:
             op_key = self.get_opcode_key()
             encrypt_ops(op_key)
@@ -248,6 +281,11 @@ class Pasticciotto(Architecture):
             raise Exception("Invalid opcode. Wrong key maybe?")
 
         instr = data_op[0]
+        if cre_width_8.match(instr):
+            width = 1
+        else:
+            width = 2
+
         tokens = [InstructionTextToken(
             InstructionTextTokenType.TextToken, '{:7s}'.format(instr))]
 
@@ -255,39 +293,48 @@ class Pasticciotto(Architecture):
             length = op_sizes["reg2reg"]
             src_val = unpack("B", data[1])[0] & 0b00001111
             dst_val = (unpack("B", data[1])[0] & 0b11110000) >> 4
-            src = [r for i, r in enumerate(self.reg_names) if i == src_val][0]
-            dst = [r for i, r in enumerate(self.reg_names) if i == dst_val][0]
-            src_tk = op_tokens["reg"](src, src_val)
+            src = [r for i, r in enumerate(reg_names) if i == src_val][0]
+            dst = [r for i, r in enumerate(reg_names) if i == dst_val][0]
+            if instr in ["lodr", "strr"]:
+                src_tk = op_tokens["addr"](src, src_val)
+            else:
+                src_tk = op_tokens["reg"](src, src_val)
             dst_tk = op_tokens["reg"](dst, dst_val)
         elif data_op[1] == "imm2reg":
             length = op_sizes["imm2reg"]
             src_val = unpack("<H", data[2: 4])[0]
             dst_val = unpack("B", data[1])[0]
             src = src_val
-            dst = [r for i, r in enumerate(self.reg_names) if i == dst_val][0]
-            src_tk = op_tokens["imm"](src, src_val)
+            dst = [r for i, r in enumerate(reg_names) if i == dst_val][0]
+            if instr == "lodi":
+                src_tk = op_tokens["addr"](src, src_val)
+            else:
+                src_tk = op_tokens["imm"](src, src_val)
             dst_tk = op_tokens["reg"](dst, dst_val)
         elif data_op[1] == "reg2imm":
             length = op_sizes["reg2imm"]
             src_val = unpack("B", data[1])[0]
             dst_val = unpack("<H", data[2: 4])[0]
-            src = [r for i, r in enumerate(self.reg_names) if i == src_val][0]
+            src = [r for i, r in enumerate(reg_names) if i == src_val][0]
             dst = dst_val
             src_tk = op_tokens["reg"](src, src_val)
-            dst_tk = op_tokens["imm"](dst, dst_val)
+            if instr == "stri":
+                dst_tk = op_tokens["addr"](dst, dst_val)
+            else:
+                dst_tk = op_tokens["imm"](dst, dst_val)
         elif data_op[1] == "byt2reg":
             length = op_sizes["byt2reg"]
             src_val = unpack("B", data[2])[0]
             dst_val = unpack("B", data[1])[0]
             src = src_val
-            dst = [r for i, r in enumerate(self.reg_names) if i == dst_val][0]
+            dst = [r for i, r in enumerate(reg_names) if i == dst_val][0]
             src_tk = op_tokens["imm"](src, src_val)
             dst_tk = op_tokens["reg"](dst, dst_val)
         elif data_op[1] == "regonly":
             length = op_sizes["regonly"]
             dst_val = unpack("B", data[1])[0]
             src = src_val = src_tk = None
-            dst = [r for i, r in enumerate(self.reg_names) if i == dst_val][0]
+            dst = [r for i, r in enumerate(reg_names) if i == dst_val][0]
             dst_tk = op_tokens["reg"](dst, dst_val)
         elif data_op[1] == "immonly":
             length = op_sizes["immonly"]
@@ -314,10 +361,10 @@ class Pasticciotto(Architecture):
         elif data_op[1] != "single":
             tokens += dst_tk
 
-        return instr, src, dst, src_val, dst_val, length, tokens
+        return instr, width, src, dst, src_val, dst_val, length, tokens
 
     def perform_get_instruction_info(self, data, addr):
-        instr, src, dst, src_val, dst_val, length, _ = self.parse(data)
+        instr, _, src, dst, src_val, dst_val, length, _ = self.parse(data)
         result = InstructionInfo()
         result.length = length
 
@@ -333,8 +380,22 @@ class Pasticciotto(Architecture):
         return result
 
     def perform_get_instruction_text(self, data, addr):
-        _, _, _, _, _, length, tokens = self.parse(data)
+        _, _, _, _, _, _, length, tokens = self.parse(data)
         return tokens, length
+
+    def perform_get_instruction_low_level_il(self, data, addr, il):
+        instr, width, src, dst, src_val, dst_val, length, _ = self.parse(data)
+
+        if il_ops.get(instr) is None or il_ops.get(instr) == 0:
+            il.append(il.unimplemented())
+        else:
+            il_instr = il_ops[instr](il, width, src, src_val, dst, dst_val)
+            if isinstance(il_instr, list):
+                for x in il_instr:
+                    il.append(x)
+            else:
+                il.append(il_instr)
+        return length
 
 
 class DefaultCallingConvention(CallingConvention):
@@ -344,8 +405,40 @@ class DefaultCallingConvention(CallingConvention):
     high_int_return_reg = 'r1'
 
 
+class PasticciottoView(BinaryView):
+    def __init__(self, data):
+        BinaryView.__init__(self, file_metadata=data.file, parent_view=data)
+        self.raw = data
+        self.platform = Architecture["pasticciotto"].standalone_platform
+        self.add_auto_segment(
+            0x0, 0x3000, 0, len(data), SegmentFlag.SegmentReadable | SegmentFlag.SegmentExecutable)
+        # Add data segment
+        self.add_auto_segment(
+            data_va, 0x3000, 0, 0, SegmentFlag.SegmentReadable | SegmentFlag.SegmentWritable)
+        # Add stack segment
+        self.add_auto_segment(stack_va, 0x3000, 0, 0, SegmentFlag.SegmentReadable |
+                              SegmentFlag.SegmentWritable | SegmentFlag.SegmentExecutable)
+        self.add_entry_point(0x0)
+
+    @classmethod
+    def is_valid_for_data(self, data):
+        return True
+
+    def perform_is_executable(self):
+        return True
+
+    def perform_get_entry_point(self):
+        return 0
+
+
+class PasticciottoAppView(PasticciottoView):
+    name = "Pasticciotto"
+    long_name = "Pasticciotto"
+
+
 Pasticciotto.register()
 arch = Architecture['pasticciotto']
 arch.register_calling_convention(DefaultCallingConvention(arch))
 standalone = arch.standalone_platform
 standalone.default_calling_convention = arch.calling_conventions['default']
+PasticciottoAppView.register()
