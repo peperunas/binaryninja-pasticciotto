@@ -79,9 +79,12 @@ op_tokens = {
         InstructionTextToken(
             InstructionTextTokenType.RegisterToken, reg)
     ],
-    "addr": lambda reg, value: [
+    "data": lambda reg, value: [
+        InstructionTextToken(InstructionTextTokenType.TextToken, "data["),
         InstructionTextToken(
-            InstructionTextTokenType.PossibleAddressToken, hex(value), data_va + value)
+            InstructionTextTokenType.PossibleAddressToken, hex(value), data_va + value),
+        InstructionTextToken(InstructionTextTokenType.TextToken, "]"),
+
     ],
     "imm": lambda reg, value: [
         InstructionTextToken(
@@ -90,14 +93,13 @@ op_tokens = {
 }
 
 il_dst = {
-    "reg": lambda il, width, dst, value: il.set_reg(
-        2, dst, value),
-    "addr": lambda il, width, dst, value: il.store(width, il.const_pointer(2, data_va + value), value),
+    "reg": lambda il, width, dst, value: il.set_reg(2, dst, value),
+    "data": lambda il, width, dst, value: il.store(width, il.const_pointer(width, data_va + value), value),
     "imm": lambda il, width, dst, value: il.const(width, value)
 }
 il_src = {
     "reg": lambda il, width, src, value: il.reg(2, src),
-    "addr": lambda il, width, src, value: il.load(width, il.const_pointer(2, data_va + value)),
+    "data": lambda il, width, src, value: il.load(width, il.const_pointer(width, data_va + value)),
     "imm": lambda il, width, src, value: il.const(width, value)
 }
 
@@ -107,10 +109,8 @@ il_ops = {
     "movr": lambda il, width, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il_src["reg"](il, width, src, src_value)),
     "lodi": lambda il, width, src, src_value, dst, dst_value:
-    il_dst["reg"](il, width, dst, il_src["addr"](il, width, src, src_value)),
-    "lodr": lambda il, width, src, src_value, dst, dst_value:
-    il_dst["reg"](il, width, dst, il_src["addr"](
-        il, width, il_src["reg"](il, width, src, src_value), src_value)),
+    il_dst["reg"](il, width, dst, il_src["data"](il, width, src, src_value)),
+    "lodr": 0,
     "stri": 0,
     "strr": 0,
     "addi": lambda il, width, src, src_value, dst, dst_value:
@@ -184,18 +184,18 @@ il_ops = {
     "cmpb": 0,
     "cmpw": 0,
     "cmpr": 0,
-    "jmpi": lambda il, width, src, src_value, dst, dst_value: jump(il, il_src["imm"](il, width, dst, dst_value)),
-    "jmpr": lambda il, width, src, src_value, dst, dst_value: jump(il, il_src["reg"](il, width, dst, dst_value)),
-    "jpai": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_UGE), il_src["imm"](il, width, dst, dst_value)),
-    "jpar": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_UGE), il_src["reg"](il, width, dst, dst_value)),
-    "jpbi": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_ULE), il_src["imm"](il, width, dst, dst_value)),
-    "jpbr": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_ULE), il_src["reg"](il, width, dst, dst_value)),
-    "jpei": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_E), il_src["imm"](il, width, dst, dst_value)),
-    "jper": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_E), il_src["reg"](il, width, dst, dst_value)),
-    "jpni": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_NE), il_src["imm"](il, width, dst, dst_value)),
-    "jpnr": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_NE), il_src["reg"](il, width, dst, dst_value)),
+    "jmpi": 0,
+    "jmpr": 0,
+    "jpai": 0,
+    "jpar": 0,
+    "jpbi": 0,
+    "jpbr": 0,
+    "jpei": 0,
+    "jper": 0,
+    "jpni": 0,
+    "jpnr": 0,
     "call": lambda il, width, src, src_value, dst, dst_value: il.call(il_dst["imm"](il, width, dst, dst_value)),
-    "retn": lambda il, width, src, src_value, dst, dst_value: il.ret(il.pop(2)),
+    "retn": lambda il, width, src, src_value, dst, dst_value: [il_dst["reg"](il, width, "rp", il.pop(2)), il.ret(il_src["reg"](il, width, "rp", "rp"))],
     "shit": lambda il, width, src, src_value, dst, dst_value: il.ret(il.pop(2)),
     "nope": lambda il, width, src, src_value, dst, dst_value: il.nop(),
     "grmn": lambda il, width, src, src_value, dst, dst_value: [il_dst["reg"](il, width, x, il.const(2, 0x42)) for x in reg_names if x not in ["sp", "rp", "ip"]]
@@ -235,6 +235,19 @@ def cond_branch(il, cond, dest):
     if not f_label_found:
         il.mark_label(f)
 
+    return ret
+
+
+def cmp(il, width, src, src_value, dst, dst_value):
+    ret = []
+    if dst_value == src_value:
+        ret.append(il.flag_bit(width, 'z', 1))
+    else:
+        ret.append(il.flag_bit(width, 'z', 0))
+    if dst_value > src_value:
+        ret.append(il.flag_bit(width, 'c', 0))
+    else:
+        ret.append(il.flag_bit(width, 'c', 1))
     return ret
 
 
@@ -354,7 +367,7 @@ class Pasticciotto(Architecture):
             src = [r for i, r in enumerate(reg_names) if i == src_val][0]
             dst = [r for i, r in enumerate(reg_names) if i == dst_val][0]
             if instr in ["lodr", "strr"]:
-                src_tk = op_tokens["addr"](src, src_val)
+                src_tk = op_tokens["data"](src, src_val)
             else:
                 src_tk = op_tokens["reg"](src, src_val)
             dst_tk = op_tokens["reg"](dst, dst_val)
@@ -365,7 +378,7 @@ class Pasticciotto(Architecture):
             src = src_val
             dst = [r for i, r in enumerate(reg_names) if i == dst_val][0]
             if instr == "lodi":
-                src_tk = op_tokens["addr"](src, src_val)
+                src_tk = op_tokens["data"](src, src_val)
             else:
                 src_tk = op_tokens["imm"](src, src_val)
             dst_tk = op_tokens["reg"](dst, dst_val)
@@ -377,7 +390,7 @@ class Pasticciotto(Architecture):
             dst = dst_val
             src_tk = op_tokens["reg"](src, src_val)
             if instr == "stri":
-                dst_tk = op_tokens["addr"](dst, dst_val)
+                dst_tk = op_tokens["data"](dst, dst_val)
             else:
                 dst_tk = op_tokens["imm"](dst, dst_val)
         elif data_op[1] == "byt2reg":
@@ -405,7 +418,7 @@ class Pasticciotto(Architecture):
             dst_val = unpack("<H", data[1: 3])[0]
             src = src_val = src_tk = None
             dst = dst_val
-            dst_tk = op_tokens["addr"](dst, dst_val)
+            dst_tk = op_tokens["data"](dst, dst_val)
         elif data_op[1] == "single":
             length = op_sizes["single"]
             src = src_val = src_tk = None
