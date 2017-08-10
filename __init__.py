@@ -296,6 +296,15 @@ class Pasticciotto(Architecture):
         LowLevelILFlagCondition.LLFC_UGE: ['c'],
         LowLevelILFlagCondition.LLFC_ULE: ['c']
     }
+    flags_written_by_flag_write_type = {
+        '*': ['c', 'z'],
+        'c': ['c'],
+        'z': ['z']
+    }
+    # The first flag write type is ignored currently.
+    # See: https://github.com/Vector35/binaryninja-api/issues/513
+    flag_write_types = ['', '*', 'c', 'z']
+
     ops_encrypted = False
 
     def get_opcode_key(self):
