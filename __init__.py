@@ -418,7 +418,7 @@ class Pasticciotto(Architecture):
             dst_val = unpack("<H", data[1: 3])[0]
             src = src_val = src_tk = None
             dst = dst_val
-            dst_tk = op_tokens["data"](dst, dst_val)
+            dst_tk = op_tokens["imm"](dst, dst_val)
         elif data_op[1] == "single":
             length = op_sizes["single"]
             src = src_val = src_tk = None
