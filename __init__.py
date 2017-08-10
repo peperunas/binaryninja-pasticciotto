@@ -384,8 +384,8 @@ class Pasticciotto(Architecture):
             dst_tk = op_tokens["reg"](dst, dst_val)
         elif data_op[1] == "reg2imm":
             length = op_sizes["reg2imm"]
-            src_val = unpack("B", data[1])[0]
-            dst_val = unpack("<H", data[2: 4])[0]
+            src_val = unpack("B", data[3])[0]
+            dst_val = unpack("<H", data[1:3])[0]
             src = [r for i, r in enumerate(reg_names) if i == src_val][0]
             dst = dst_val
             src_tk = op_tokens["reg"](src, src_val)
