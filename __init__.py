@@ -86,6 +86,13 @@ op_tokens = {
         InstructionTextToken(InstructionTextTokenType.TextToken, "]"),
 
     ],
+    "datareg": lambda reg, value: [
+        InstructionTextToken(InstructionTextTokenType.TextToken, "data["),
+        InstructionTextToken(
+            InstructionTextTokenType.RegisterToken, reg),
+        InstructionTextToken(InstructionTextTokenType.TextToken, "]"),
+
+    ],
     "imm": lambda reg, value: [
         InstructionTextToken(
             InstructionTextTokenType.IntegerToken, hex(value))
@@ -367,7 +374,7 @@ class Pasticciotto(Architecture):
             src = [r for i, r in enumerate(reg_names) if i == src_val][0]
             dst = [r for i, r in enumerate(reg_names) if i == dst_val][0]
             if instr in ["lodr", "strr"]:
-                src_tk = op_tokens["data"](src, src_val)
+                src_tk = op_tokens["datareg"](src, src_val)
             else:
                 src_tk = op_tokens["reg"](src, src_val)
             dst_tk = op_tokens["reg"](dst, dst_val)
