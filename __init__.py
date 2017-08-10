@@ -93,7 +93,7 @@ il_dst = {
     "reg": lambda il, width, dst, value: il.set_reg(
         2, dst, value),
     "addr": lambda il, width, dst, value: il.store(width, il.const_pointer(2, data_va + value), value),
-    "imm": lambda il, width, src, value: il.const(width, value)
+    "imm": lambda il, width, dst, value: il.const(width, value)
 }
 il_src = {
     "reg": lambda il, width, src, value: il.reg(2, src),
@@ -179,27 +179,76 @@ il_ops = {
     "shrr": lambda il, width, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.logical_shift_right(width, il_src["reg"](
         il, width, dst, dst_value), il_src["reg"](il, width, src, src_value))),
-    "push": lambda il, width, src, src_value, dst, dst_value: il.push(2, il_src["imm"](il, width, dst, dst_value)),
+    "push": lambda il, width, src, src_value, dst, dst_value: il.push(width, il_src["reg"](il, width, dst, dst_value)),
     "poop": lambda il, width, src, src_value, dst, dst_value: il_dst["reg"](il, width, dst, il.pop(2)),
     "cmpb": 0,
     "cmpw": 0,
     "cmpr": 0,
-    "jmpi": 0,
-    "jmpr": 0,
-    "jpai": 0,
-    "jpar": 0,
-    "jpbi": 0,
-    "jpbr": 0,
-    "jpei": 0,
-    "jper": 0,
-    "jpni": 0,
-    "jpnr": 0,
-    "call": 0,
+    "jmpi": lambda il, width, src, src_value, dst, dst_value: jump(il, il_src["imm"](il, width, dst, dst_value)),
+    "jmpr": lambda il, width, src, src_value, dst, dst_value: jump(il, il_src["reg"](il, width, dst, dst_value)),
+    "jpai": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_UGE), il_src["imm"](il, width, dst, dst_value)),
+    "jpar": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_UGE), il_src["reg"](il, width, dst, dst_value)),
+    "jpbi": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_ULE), il_src["imm"](il, width, dst, dst_value)),
+    "jpbr": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_ULE), il_src["reg"](il, width, dst, dst_value)),
+    "jpei": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_E), il_src["imm"](il, width, dst, dst_value)),
+    "jper": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_E), il_src["reg"](il, width, dst, dst_value)),
+    "jpni": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_NE), il_src["imm"](il, width, dst, dst_value)),
+    "jpnr": lambda il, width, src, src_value, dst, dst_value: cond_branch(il, il.flag_condition(LowLevelILFlagCondition.LLFC_NE), il_src["reg"](il, width, dst, dst_value)),
+    "call": lambda il, width, src, src_value, dst, dst_value: il.call(il_dst["imm"](il, width, dst, dst_value)),
     "retn": lambda il, width, src, src_value, dst, dst_value: il.ret(il.pop(2)),
     "shit": lambda il, width, src, src_value, dst, dst_value: il.ret(il.pop(2)),
     "nope": lambda il, width, src, src_value, dst, dst_value: il.nop(),
     "grmn": lambda il, width, src, src_value, dst, dst_value: [il_dst["reg"](il, width, x, il.const(2, 0x42)) for x in reg_names if x not in ["sp", "rp", "ip"]]
 }
+
+
+def cond_branch(il, cond, dest):
+    ret = []
+    t = il.get_label_for_address(
+        Architecture['pasticciotto'], il[dest].constant)
+
+    if t is None:
+        # t is not an address in the current function scope.
+        t = LowLevelILLabel()
+        indirect = True
+    else:
+        indirect = False
+
+    f_label_found = True
+
+    f = il.get_label_for_address(
+        Architecture['pasticciotto'], il.current_address + 2)
+
+    if f is None:
+        f = LowLevelILLabel()
+        f_label_found = False
+
+    ret.append(il.if_expr(cond, t, f))
+
+    if indirect:
+        # If the destination is not in the current function,
+        # then a jump, rather than a goto, needs to be added to
+        # the IL.
+        il.mark_label(t)
+        ret.append(il.jump(dest))
+
+    if not f_label_found:
+        il.mark_label(f)
+
+    return ret
+
+
+def jump(il, dest):
+    label = None
+
+    if il[dest].operation == LowLevelILOperation.LLIL_CONST:
+        label = il.get_label_for_address(
+            Architecture['pasticciotto'], il[dest].constant)
+
+    if label is None:
+        return il.jump(dest)
+    else:
+        return il.goto(label)
 
 
 def encrypt_ops(key):
@@ -245,7 +294,7 @@ class Pasticciotto(Architecture):
         LowLevelILFlagCondition.LLFC_E: ['z'],
         LowLevelILFlagCondition.LLFC_NE: ['z'],
         LowLevelILFlagCondition.LLFC_UGE: ['c'],
-        LowLevelILFlagCondition.LLFC_ULT: ['c']
+        LowLevelILFlagCondition.LLFC_ULE: ['c']
     }
     ops_encrypted = False
 
