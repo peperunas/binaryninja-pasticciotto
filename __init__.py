@@ -124,7 +124,8 @@ il_ops = {
     il_dst["reg"](il, width, dst, il_src["data"](il, width, il_src["reg"](il, width, src, src_value), src_value)),
     "stri": lambda il, width, src, src_value, dst, dst_value:
     il_dst["data"](il, width, il_src["imm"](il, width, dst, dst_value), il_src["reg"](il, width, src, src_value)),
-    "strr": 0,
+    "strr": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["data"](il, width, il_src["reg"](il, width, src, src_value), il_src["reg"](il, width, src, src_value)),
     "addi": lambda il, width, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.add(width, il_src["reg"](il, width, dst, dst_value), il_src["imm"](
         il, width, src, src_value))),
