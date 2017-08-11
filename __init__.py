@@ -104,7 +104,8 @@ op_tokens = {
 
 il_dst = {
     "reg": lambda il, width, dst, value: il.set_reg(2, dst, value),
-    "data": lambda il, width, dst, value: il.store(width, il.const_pointer(width, data_va + value), value),
+    "data": lambda il, width, dst, value: il.store(width, il.const_pointer(width, data_va + dst), value),
+    "regdata": lambda il, width, dst, value: il.store(width, il.const_pointer(width, data_va + value), value),
     "imm": lambda il, width, dst, value: il.const(width, value)
 }
 il_src = {
@@ -121,7 +122,8 @@ il_ops = {
     "lodi": lambda il, width, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il_src["data"](il, width, src, src_value)),
     "lodr": 0,
-    "stri": 0,
+    "stri": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["data"](il, width, dst, il_src["reg"](il, width, src, src_value)),
     "strr": 0,
     "addi": lambda il, width, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.add(width, il_src["reg"](il, width, dst, dst_value), il_src["imm"](
