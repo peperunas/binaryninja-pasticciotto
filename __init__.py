@@ -109,7 +109,7 @@ il_dst = {
 }
 il_src = {
     "reg": lambda il, width, src, value: il.reg(2, src),
-    "data": lambda il, width, src, value: il.load(width, il.const_pointer(4, data_va + value)),
+    "data": lambda il, width, src, value: il.load(width, il.add(4, src, il.const(4, data_va))),
     "imm": lambda il, width, src, value: il.const(width, value)
 }
 
@@ -119,8 +119,9 @@ il_ops = {
     "movr": lambda il, width, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il_src["reg"](il, width, src, src_value)),
     "lodi": lambda il, width, src, src_value, dst, dst_value:
-    il_dst["reg"](il, width, dst, il_src["data"](il, width, src, src_value)),
-    "lodr": 0,
+    il_dst["reg"](il, width, dst, il_src["data"](il, width, il_src["imm"](il, width, src, src_value), src_value)),
+    "lodr": lambda il, width, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il_src["data"](il, width, il_src["reg"](il, width, src, src_value), src_value)),
     "stri": lambda il, width, src, src_value, dst, dst_value:
     il_dst["data"](il, width, dst, il_src["reg"](il, width, src, src_value)),
     "strr": 0,
