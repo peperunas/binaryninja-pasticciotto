@@ -104,12 +104,12 @@ op_tokens = {
 
 il_dst = {
     "reg": lambda il, width, dst, value: il.set_reg(2, dst, value),
-    "data": lambda il, width, dst, value: il.store(width, il.const_pointer(width, data_va + dst), value),
+    "data": lambda il, width, dst, value: il.store(width, il.const_pointer(4, data_va + dst), value),
     "imm": lambda il, width, dst, value: il.const(width, value)
 }
 il_src = {
     "reg": lambda il, width, src, value: il.reg(2, src),
-    "data": lambda il, width, src, value: il.load(width, il.const_pointer(width, data_va + value)),
+    "data": lambda il, width, src, value: il.load(width, il.const_pointer(4, data_va + value)),
     "imm": lambda il, width, src, value: il.const(width, value)
 }
 
