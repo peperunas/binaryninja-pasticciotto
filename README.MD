@@ -21,10 +21,10 @@ This plugin is released under a [MIT](LICENSE) license.
 
 ## Credits
 
-Huge thanks to [Josh Watson](https://github.com/joshwatson) for his help!
+Huge thanks to [Josh Watson](https://github.com/joshwatson) and Ryan Snyder!
 
 
-His **[MSP430](https://github.com/joshwatson/binaryninja-msp430)** repo was the starting point for my plugin.
+Josh **[MSP430](https://github.com/joshwatson/binaryninja-msp430)** repo was the starting point for my plugin.
 
 # Disclaimer
 
