@@ -105,7 +105,6 @@ op_tokens = {
 il_dst = {
     "reg": lambda il, width, dst, value: il.set_reg(2, dst, value),
     "data": lambda il, width, dst, value: il.store(width, il.const_pointer(width, data_va + dst), value),
-    "regdata": lambda il, width, dst, value: il.store(width, il.const_pointer(width, data_va + value), value),
     "imm": lambda il, width, dst, value: il.const(width, value)
 }
 il_src = {
