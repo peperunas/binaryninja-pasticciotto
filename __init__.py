@@ -114,123 +114,127 @@ il_src = {
 }
 
 il_ops = {
-    "movi": lambda il, width, src, src_value, dst, dst_value:
+    "movi": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il_src["imm"](il, width, src, src_value)),
-    "movr": lambda il, width, src, src_value, dst, dst_value:
+    "movr": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il_src["reg"](il, width, src, src_value)),
-    "lodi": lambda il, width, src, src_value, dst, dst_value:
-    il_dst["reg"](il, width, dst, il_src["data"](il, width, il_src["imm"](il, width, src, src_value), src_value)),
-    "lodr": lambda il, width, src, src_value, dst, dst_value:
-    il_dst["reg"](il, width, dst, il_src["data"](il, width, il_src["reg"](il, width, src, src_value), src_value)),
-    "stri": lambda il, width, src, src_value, dst, dst_value:
-    il_dst["data"](il, width, il_src["imm"](il, width, dst, dst_value), il_src["reg"](il, width, src, src_value)),
-    "strr": lambda il, width, src, src_value, dst, dst_value:
-    il_dst["data"](il, width, il_src["reg"](il, width, src, src_value), il_src["reg"](il, width, src, src_value)),
-    "addi": lambda il, width, src, src_value, dst, dst_value:
+    "lodi": lambda il, width, i_length, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il_src["data"](
+        il, width, il_src["imm"](il, width, src, src_value), src_value)),
+    "lodr": lambda il, width, i_length, src, src_value, dst, dst_value:
+    il_dst["reg"](il, width, dst, il_src["data"](
+        il, width, il_src["reg"](il, width, src, src_value), src_value)),
+    "stri": lambda il, width, i_length, src, src_value, dst, dst_value:
+    il_dst["data"](il, width, il_src["imm"](
+        il, width, dst, dst_value), il_src["reg"](il, width, src, src_value)),
+    "strr": lambda il, width, i_length, src, src_value, dst, dst_value:
+    il_dst["data"](il, width, il_src["reg"](
+        il, width, src, src_value), il_src["reg"](il, width, src, src_value)),
+    "addi": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.add(width, il_src["reg"](il, width, dst, dst_value), il_src["imm"](
         il, width, src, src_value))),
-    "addr": lambda il, width, src, src_value, dst, dst_value:
+    "addr": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.add(width, il_src["reg"](il, width, dst, dst_value), il_src["reg"](
         il, width, src, src_value))),
-    "subi": lambda il, width, src, src_value, dst, dst_value:
+    "subi": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.sub(width, il_src["reg"](
         il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
-    "subr": lambda il, width, src, src_value, dst, dst_value:
+    "subr": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.sub(width, il_src["reg"](
         il, width, dst, dst_value), il_src["reg"](il, width, src, src_value))),
-    "andi": lambda il, width, src, src_value, dst, dst_value:
+    "andi": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.and_expr(width, il_src["reg"](
         il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
-    "andw": lambda il, width, src, src_value, dst, dst_value:
+    "andw": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.and_expr(width, il_src["reg"](
         il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
-    "andr": lambda il, width, src, src_value, dst, dst_value:
+    "andr": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.and_expr(width, il_src["reg"](
         il, width, dst, dst_value), il_src["reg"](il, width, src, src_value))),
-    "yorb": lambda il, width, src, src_value, dst, dst_value:
+    "yorb": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.or_expr(width, il_src["reg"](
         il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
-    "yorw": lambda il, width, src, src_value, dst, dst_value:
+    "yorw": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.or_expr(width, il_src["reg"](
         il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
-    "yorr": lambda il, width, src, src_value, dst, dst_value:
+    "yorr": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.or_expr(width, il_src["reg"](
         il, width, dst, dst_value), il_src["reg"](il, width, src, src_value))),
-    "xorb": lambda il, width, src, src_value, dst, dst_value:
+    "xorb": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.xor_expr(width, il_src["reg"](
         il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
-    "xorw": lambda il, width, src, src_value, dst, dst_value:
+    "xorw": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.xor_expr(width, il_src["reg"](
         il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
-    "xorr": lambda il, width, src, src_value, dst, dst_value:
+    "xorr": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.xor_expr(width, il_src["reg"](
         il, width, dst, dst_value), il_src["reg"](il, width, src, src_value))),
-    "notr": lambda il, width, src, src_value, dst, dst_value:
+    "notr": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.neg_expr(
         il_src["reg"](il, width, dst, dst_value))),
-    "muli": lambda il, width, src, src_value, dst, dst_value:
+    "muli": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.mult(width, il_src["reg"](il, width, dst, dst_value), il_src["imm"](
         il, width, src, src_value))),
-    "mulr": lambda il, width, src, src_value, dst, dst_value:
+    "mulr": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.mult(width, il_src["reg"](il, width, dst, dst_value), il_src["reg"](
         il, width, src, src_value))),
-    "divi": lambda il, width, src, src_value, dst, dst_value:
+    "divi": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.div_unsigned(width, il_src["reg"](il, width, dst, dst_value), il_src["imm"](
         il, width, src, src_value))),
-    "divr": lambda il, width, src, src_value, dst, dst_value:
+    "divr": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.div_unsigned(width, il_src["reg"](il, width, dst, dst_value), il_src["reg"](
         il, width, src, src_value))),
-    "shli": lambda il, width, src, src_value, dst, dst_value:
+    "shli": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.shift_left(width, il_src["reg"](
         il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
-    "shlr": lambda il, width, src, src_value, dst, dst_value:
+    "shlr": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.shift_left(width, il_src["reg"](
         il, width, dst, dst_value), il_src["reg"](il, width, src, src_value))),
-    "shri": lambda il, width, src, src_value, dst, dst_value:
+    "shri": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.logical_shift_right(width, il_src["reg"](
         il, width, dst, dst_value), il_src["imm"](il, width, src, src_value))),
-    "shrr": lambda il, width, src, src_value, dst, dst_value:
+    "shrr": lambda il, width, i_length, src, src_value, dst, dst_value:
     il_dst["reg"](il, width, dst, il.logical_shift_right(width, il_src["reg"](
         il, width, dst, dst_value), il_src["reg"](il, width, src, src_value))),
-    "push": lambda il, width, src, src_value, dst, dst_value: il.push(width, il_src["reg"](il, width, dst, dst_value)),
-    "poop": lambda il, width, src, src_value, dst, dst_value: il_dst["reg"](il, width, dst, il.pop(2)),
-    "cmpb": lambda il, width, src, src_value, dst, dst_value: il.sub(width, il_src["reg"](il, width, dst, dst_value), il_src["imm"](il, width, src, src_value), flags="*"),
-    "cmpw": lambda il, width, src, src_value, dst, dst_value: il.sub(width, il_src["reg"](il, width, dst, dst_value), il_src["imm"](il, width, src, src_value), flags="*"),
-    "cmpr": lambda il, width, src, src_value, dst, dst_value: il.sub(width, il_src["reg"](il, width, dst, dst_value), il_src["reg"](il, width, src, src_value), flags="*"),
-    "jmpi": 0,
-    "jmpr": 0,
-    "jpai": 0,
-    "jpar": 0,
-    "jpbi": 0,
-    "jpbr": 0,
-    "jpei": 0,
-    "jper": 0,
-    "jpni": 0,
-    "jpnr": 0,
-    "call": lambda il, width, src, src_value, dst, dst_value: il.call(il_dst["imm"](il, width, dst, dst_value)),
-    "retn": lambda il, width, src, src_value, dst, dst_value: [il_dst["reg"](il, width, "rp", il.pop(2)), il.ret(il_src["reg"](il, width, "rp", "rp"))],
-    "shit": lambda il, width, src, src_value, dst, dst_value: il.ret(il.pop(2)),
-    "nope": lambda il, width, src, src_value, dst, dst_value: il.nop(),
-    "grmn": lambda il, width, src, src_value, dst, dst_value: [il_dst["reg"](il, width, x, il.const(2, 0x42)) for x in reg_names if x not in ["sp", "rp", "ip"]]
+    "push": lambda il, width, i_length, src, src_value, dst, dst_value: il.push(width, il_src["reg"](il, width, dst, dst_value)),
+    "poop": lambda il, width, i_length, src, src_value, dst, dst_value: il_dst["reg"](il, width, dst, il.pop(2)),
+    "cmpb": lambda il, width, i_length, src, src_value, dst, dst_value: il.sub(width, il_src["reg"](il, width, dst, dst_value), il_src["imm"](il, width, src, src_value), flags="*"),
+    "cmpw": lambda il, width, i_length, src, src_value, dst, dst_value: il.sub(width, il_src["reg"](il, width, dst, dst_value), il_src["imm"](il, width, src, src_value), flags="*"),
+    "cmpr": lambda il, width, i_length, src, src_value, dst, dst_value: il.sub(width, il_src["reg"](il, width, dst, dst_value), il_src["reg"](il, width, src, src_value), flags="*"),
+    "jmpi": lambda il, width, i_length, src, src_value, dst, dst_value: jump(il, il_src["imm"](il, width, dst, dst_value)),
+    "jmpr": lambda il, width, i_length, src, src_value, dst, dst_value: jump(il, il_src["reg"](il, width, dst, dst_value)),
+    "jpai": lambda il, width, i_length, src, src_value, dst, dst_value: cond_branch(il, i_length, il.flag_condition(LowLevelILFlagCondition.LLFC_UGT), il_dst["imm"](il, width, dst, dst_value)),
+    "jpar": lambda il, width, i_length, src, src_value, dst, dst_value: cond_branch(il, i_length, il.flag_condition(LowLevelILFlagCondition.LLFC_UGT), il_dst["reg"](il, width, dst, dst_value)),
+    "jpbi": lambda il, width, i_length, src, src_value, dst, dst_value: cond_branch(il, i_length, il.flag_condition(LowLevelILFlagCondition.LLFC_ULE), il_dst["imm"](il, width, dst, dst_value)),
+    "jpbr": lambda il, width, i_length, src, src_value, dst, dst_value: cond_branch(il, i_length, il.flag_condition(LowLevelILFlagCondition.LLFC_ULE), il_dst["reg"](il, width, dst, dst_value)),
+    "jpei": lambda il, width, i_length, src, src_value, dst, dst_value: cond_branch(il, i_length, il.flag_condition(LowLevelILFlagCondition.LLFC_E), il_dst["imm"](il, width, dst, dst_value)),
+    "jper": lambda il, width, i_length, src, src_value, dst, dst_value: cond_branch(il, i_length, il.flag_condition(LowLevelILFlagCondition.LLFC_E), il_dst["reg"](il, width, dst, dst_value)),
+    "jpni": lambda il, width, i_length, src, src_value, dst, dst_value: cond_branch(il, i_length, il.flag_condition(LowLevelILFlagCondition.LLFC_NE), il_dst["imm"](il, width, dst, dst_value)),
+    "jpnr": lambda il, width, i_length, src, src_value, dst, dst_value: cond_branch(il, i_length, il.flag_condition(LowLevelILFlagCondition.LLFC_NE), il_dst["reg"](il, width, dst, dst_value)),
+    "call": lambda il, width, i_length, src, src_value, dst, dst_value: il.call(il_dst["imm"](il, width, dst, dst_value)),
+    "retn": lambda il, width, i_length, src, src_value, dst, dst_value: [il_dst["reg"](il, width, "rp", il.pop(2)), il.ret(il_src["reg"](il, width, "rp", "rp"))],
+    "shit": lambda il, width, i_length, src, src_value, dst, dst_value: il.ret(il.pop(2)),
+    "nope": lambda il, width, i_length, src, src_value, dst, dst_value: il.nop(),
+    "grmn": lambda il, width, i_length, src, src_value, dst, dst_value: [il_dst["reg"](il, width, x, il.const(2, 0x42)) for x in reg_names if x not in ["sp", "rp", "ip"]]
 }
 
 
-def cond_branch(il, cond, dest):
+def cond_branch(il, length, cond, dest):
     ret = []
+    indirect_jump = False
+
     t = il.get_label_for_address(
         Architecture['pasticciotto'], il[dest].constant)
 
     if t is None:
         # t is not an address in the current function scope.
         t = LowLevelILLabel()
-        indirect = True
-    else:
-        indirect = False
+        indirect_jump = True
 
     f_label_found = True
 
     f = il.get_label_for_address(
-        Architecture['pasticciotto'], il.current_address + 2)
+        Architecture['pasticciotto'], il.current_address + length)
 
     if f is None:
         f = LowLevelILLabel()
@@ -238,7 +242,7 @@ def cond_branch(il, cond, dest):
 
     ret.append(il.if_expr(cond, t, f))
 
-    if indirect:
+    if indirect_jump:
         # If the destination is not in the current function,
         # then a jump, rather than a goto, needs to be added to
         # the IL.
@@ -319,7 +323,7 @@ class Pasticciotto(Architecture):
     flags_required_for_flag_condition = {
         LowLevelILFlagCondition.LLFC_E: ['z'],
         LowLevelILFlagCondition.LLFC_NE: ['z'],
-        LowLevelILFlagCondition.LLFC_UGE: ['c'],
+        LowLevelILFlagCondition.LLFC_UGT: ['c'],
         LowLevelILFlagCondition.LLFC_ULE: ['c']
     }
     flags_written_by_flag_write_type = {
@@ -473,7 +477,7 @@ class Pasticciotto(Architecture):
         if il_ops.get(instr) is None or il_ops.get(instr) == 0:
             il.append(il.unimplemented())
         else:
-            il_instr = il_ops[instr](il, width, src, src_val, dst, dst_val)
+            il_instr = il_ops[instr](il, width, length, src, src_val, dst, dst_val)
             if isinstance(il_instr, list):
                 for x in il_instr:
                     il.append(x)
