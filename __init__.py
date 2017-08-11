@@ -7,7 +7,10 @@ re_width_8 = ".*[bB]$"
 reg_names = ["r0", "r1", "r2", "r3", "s0",
              "s1", "s2", "s3", "ip", "rp", "sp"]
 data_va = 0x10000000
+data_size = 0x100000
 stack_va = 0x20000000
+stack_size = 0x100000
+
 # name, size, value
 ops = [
     ["movi", "imm2reg", 0],
@@ -492,9 +495,9 @@ class PasticciottoView(BinaryView):
             0x0, 0x3000, 0, len(data), SegmentFlag.SegmentReadable | SegmentFlag.SegmentExecutable)
         # Add data segment
         self.add_auto_segment(
-            data_va, 0x3000, 0, 0, SegmentFlag.SegmentReadable | SegmentFlag.SegmentWritable)
+            data_va, data_size, 0, 0, SegmentFlag.SegmentReadable | SegmentFlag.SegmentWritable)
         # Add stack segment
-        self.add_auto_segment(stack_va, 0x3000, 0, 0, SegmentFlag.SegmentReadable |
+        self.add_auto_segment(stack_va, stack_size, 0, 0, SegmentFlag.SegmentReadable |
                               SegmentFlag.SegmentWritable | SegmentFlag.SegmentExecutable)
         self.add_entry_point(0x0)
 
