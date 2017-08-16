@@ -215,7 +215,7 @@ il_ops = {
     "retn": lambda il, width, i_length, src, src_value, dst, dst_value: [il_dst["reg"](il, width, "rp", il.pop(2)), il.ret(il_src["reg"](il, width, "rp", "rp"))],
     "shit": lambda il, width, i_length, src, src_value, dst, dst_value: il.ret(il.pop(2)),
     "nope": lambda il, width, i_length, src, src_value, dst, dst_value: il.nop(),
-    "grmn": lambda il, width, i_length, src, src_value, dst, dst_value: [il_dst["reg"](il, width, x, il.const(2, 0x42)) for x in reg_names if x not in ["sp", "rp", "ip"]]
+    "grmn": lambda il, width, i_length, src, src_value, dst, dst_value: [il_dst["reg"](il, width, x, il.const(2, 0x4747)) for x in reg_names if x not in ["sp", "rp", "ip"]]
 }
 
 
