@@ -526,7 +526,5 @@ class PasticciottoAppView(PasticciottoView):
 
 Pasticciotto.register()
 arch = Architecture['pasticciotto']
-arch.register_calling_convention(DefaultCallingConvention(arch))
 standalone = arch.standalone_platform
-standalone.default_calling_convention = arch.calling_conventions['default']
 PasticciottoAppView.register()
